@@ -23,27 +23,15 @@ async def leaderboard(ctx, *, server_name: str = None):
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
-                "--disable-gpu"
+                "--disable-gpu",
+                "--no-zygote",
+                "--single-process"
             ]
         )
         page = await browser.new_page()
         await page.set_viewport_size({"width": 1280, "height": 720})
         
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
-        
-        # Give the game extra time to fully render the canvas and buttons
-        await page.wait_for_timeout(8000)
-
-        # 1. Click the center of the screen first to focus the game canvas
-        await page.mouse.click(640, 360)
-        await page.wait_for_timeout(1000)
-
-        # 2. Click the CONTINUE button coordinate
-        await page.mouse.click(415, 560)
-        await page.wait_for_timeout(2000)
-
-        # 3. Click the PLAY / Enter game button if it appears after continue
-        await page.mouse.click(640, 500)
         await page.wait_for_timeout(3000)
 
         screenshot_path = "leaderboard.png"
