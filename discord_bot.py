@@ -14,7 +14,7 @@ async def on_ready():
 
 @bot.command(name="leaderboard")
 async def leaderboard(ctx, *, server_name: str = None):
-    await ctx.send("Entering match and capturing live leaderboard, please wait...")
+    await ctx.send("Capturing leaderboard, please wait...")
     
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -36,7 +36,6 @@ async def leaderboard(ctx, *, server_name: str = None):
         )
         page = await context.new_page()
         
-        # Safe ad blocker for explicit ad networks
         await page.route(
             "**/*", 
             lambda route: route.abort() if any(ad in route.request.url for ad in [
@@ -52,7 +51,7 @@ async def leaderboard(ctx, *, server_name: str = None):
         """)
 
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
-        await page.wait_for_timeout(7000)
+        await page.wait_for_timeout(6000)
 
         # 1. Click center to focus canvas
         await page.mouse.click(640, 360)
@@ -60,19 +59,19 @@ async def leaderboard(ctx, *, server_name: str = None):
 
         # 2. Click CONTINUE to dismiss update popup
         await page.mouse.click(415, 575)
-        await page.wait_for_timeout(2500)
+        await page.wait_for_timeout(2000)
 
-        # 3. Press Enter to hit PLAY and enter the live match
+        # 3. Press Enter to hit PLAY
         await page.keyboard.press("Enter")
-        await page.wait_for_timeout(8000)
+        
+        # Take snapshot immediately without waiting 8 seconds to avoid memory exhaustion
+        await page.wait_for_timeout(2000)
 
         screenshot_path = "leaderboard.png"
-        
-        # Crop cleanly to the top right leaderboard area
         await page.screenshot(
             path=screenshot_path,
             type="jpeg",
-            quality=85,
+            quality=80,
             clip={"x": 980, "y": 20, "width": 280, "height": 320}
         )
         
