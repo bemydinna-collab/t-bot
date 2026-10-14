@@ -13,33 +13,44 @@ async def on_ready():
     print(f"Logged in as {bot.user}!")
 
 @bot.command(name="leaderboard")
-async def leaderboard(ctx):
+async def leaderboard(ctx, *, server_name: str = None):
     await ctx.send("Capturing leaderboard, please wait...")
     
     async with async_playwright() as p:
-        # Launch browser in headless mode optimized for containers
         browser = await p.chromium.launch(
             headless=True,
             args=["--no-sandbox", "--disable-setuid-sandbox"]
         )
         page = await browser.new_page()
+        await page.set_viewport_size({"width": 1280, "height": 720})
         
-        # Go to Taming.io (adjust URL/query parameters as needed)
-        await page.goto("https://taming.io/")
+        await page.goto("https://taming.io/", wait_until="domcontentloaded")
+        await page.wait_for_timeout(4000)
         
-        # Wait for the game/leaderboard elements to load
-        await page.wait_for_timeout(5000)
-        
-        # Take a screenshot of the page or specific element
+        # Press Escape key to dismiss default popups
+        await page.keyboard.press("Escape")
+        await page.wait_for_timeout(1000)
+
+        # Try clicking any visible modal close button or Continue button
+        try:
+            # Check for "CONTINUE" text button
+            continue_btn = page.locator("text=CONTINUE")
+            if await continue_btn.is_visible():
+                await continue_btn.click(force=True)
+                await page.wait_for_timeout(1500)
+        except Exception as e:
+            print(f"Popup click error: {e}")
+
+        # Additional Escape press to guarantee overlay is closed
+        await page.keyboard.press("Escape")
+        await page.wait_for_timeout(1000)
+
         screenshot_path = "leaderboard.png"
         await page.screenshot(path=screenshot_path, full_page=False)
-        
         await browser.close()
         
-    # Send the screenshot back to Discord
     await ctx.send(file=discord.File(screenshot_path))
 
-# Run the bot using the environment variable
 TOKEN = os.getenv("DISCORD_TOKEN")
 if not TOKEN:
     raise ValueError("No DISCORD_TOKEN found in environment variables!")
