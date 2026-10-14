@@ -25,6 +25,7 @@ async def leaderboard(ctx, *, server_name: str = None):
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
                 "--disable-software-rasterizer",
+                "--disable-dev-shm-usage",
                 "--disable-blink-features=AutomationControlled",
                 "--js-flags=--max-old-space-size=256"
             ]
@@ -52,17 +53,26 @@ async def leaderboard(ctx, *, server_name: str = None):
         await page.mouse.click(310, 430)
         await page.wait_for_timeout(3000)
 
-        # 3. Click the menu leaderboard / ranking icon on the right side (adjusted for 960x540)
-        await page.mouse.click(650, 300)
-        await page.wait_for_timeout(2000)
-
         screenshot_path = "leaderboard.png"
-        await page.screenshot(
-            path=screenshot_path, 
-            type="jpeg", 
-            quality=80, 
-            animations="disabled"
-        )
+        
+        # Extract canvas frame data directly via JavaScript to bypass font-rasterization crash
+        screenshot_bytes = await page.evaluate("""
+            async () => {
+                const canvas = document.querySelector('canvas');
+                if (!canvas) return null;
+                return canvas.toDataURL('image/jpeg', 0.7);
+            }
+        """)
+
+        if screenshot_bytes:
+            import base64
+            header, encoded = screenshot_bytes.split(",", 1)
+            with open(screenshot_path, "wb") as fh:
+                fh.write(base64.b64decode(encoded))
+        else:
+            # Fallback to clip screenshot if canvas grab is empty
+            await page.screenshot(path=screenshot_path, type="jpeg", quality=70, clip={"x": 0, "y": 0, "width": 960, "height": 540})
+
         await browser.close()
         
     await ctx.send(file=discord.File(screenshot_path))
