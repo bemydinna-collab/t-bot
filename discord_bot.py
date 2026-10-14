@@ -24,12 +24,14 @@ async def leaderboard(ctx, *, server_name: str = None):
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
+                "--disable-software-rasterizer",
                 "--disable-blink-features=AutomationControlled",
-                "--js-flags=--max-old-space-size=512"
+                "--js-flags=--max-old-space-size=256"
             ]
         )
+        # Use a smaller resolution to minimize WebGL canvas memory usage
         context = await browser.new_context(
-            viewport={"width": 1280, "height": 720},
+            viewport={"width": 960, "height": 540},
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
         )
         page = await context.new_page()
@@ -41,28 +43,25 @@ async def leaderboard(ctx, *, server_name: str = None):
         """)
 
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
-        
-        try:
-            await page.wait_for_selector("iframe[src*='cloudflare']", state="detached", timeout=12000)
-        except Exception:
-            pass
-
         await page.wait_for_timeout(6000)
 
-        # 1. Focus canvas
-        await page.mouse.click(640, 360)
+        # 1. Click center to focus canvas
+        await page.mouse.click(480, 270)
         await page.wait_for_timeout(1000)
 
-        # 2. Click CONTINUE button
-        await page.mouse.click(415, 575)
-        await page.wait_for_timeout(3000)
+        # 2. Click CONTINUE button (adjusted for 960x540 viewport)
+        await page.mouse.click(310, 430)
+        await page.wait_for_timeout(2000)
+
+        # 3. Press Enter to trigger Play safely
+        await page.keyboard.press("Enter")
+        await page.wait_for_timeout(4000)
 
         screenshot_path = "leaderboard.png"
-        # Take screenshot as JPEG with disabled animations to avoid font-rasterization crash
         await page.screenshot(
             path=screenshot_path, 
             type="jpeg", 
-            quality=80, 
+            quality=75, 
             animations="disabled"
         )
         await browser.close()
