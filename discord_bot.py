@@ -40,12 +40,12 @@ async def leaderboard(ctx, *, server_name: str = None):
         await page.mouse.click(640, 360)
         await page.wait_for_timeout(1000)
 
-        # 2. Click CONTINUE button
+        # 2. Click CONTINUE button coordinates
         await page.mouse.click(415, 575)
         await page.wait_for_timeout(2000)
 
-        # 3. Click PLAY button (located around center-right on the spawn screen)
-        await page.mouse.click(415, 615)
+        # 3. Press Enter key to trigger the Play button
+        await page.keyboard.press("Enter")
         await page.wait_for_timeout(4000)
 
         screenshot_path = "leaderboard.png"
