@@ -29,7 +29,6 @@ async def leaderboard(ctx, *, server_name: str = None):
                 "--js-flags=--max-old-space-size=256"
             ]
         )
-        # Use a smaller resolution to minimize WebGL canvas memory usage
         context = await browser.new_context(
             viewport={"width": 960, "height": 540},
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
@@ -49,19 +48,19 @@ async def leaderboard(ctx, *, server_name: str = None):
         await page.mouse.click(480, 270)
         await page.wait_for_timeout(1000)
 
-        # 2. Click CONTINUE button (adjusted for 960x540 viewport)
+        # 2. Click CONTINUE to dismiss update popup
         await page.mouse.click(310, 430)
-        await page.wait_for_timeout(2000)
+        await page.wait_for_timeout(3000)
 
-        # 3. Press Enter to trigger Play safely
-        await page.keyboard.press("Enter")
-        await page.wait_for_timeout(4000)
+        # 3. Click the menu leaderboard / ranking icon on the right side (adjusted for 960x540)
+        await page.mouse.click(650, 300)
+        await page.wait_for_timeout(2000)
 
         screenshot_path = "leaderboard.png"
         await page.screenshot(
             path=screenshot_path, 
             type="jpeg", 
-            quality=75, 
+            quality=80, 
             animations="disabled"
         )
         await browser.close()
