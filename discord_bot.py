@@ -22,24 +22,31 @@ async def leaderboard(ctx, *, server_name: str = None):
             args=[
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage", # Fixes the Docker crash!
+                "--disable-dev-shm-usage",
                 "--disable-gpu"
             ]
         )
         page = await browser.new_page()
         await page.set_viewport_size({"width": 1280, "height": 720})
         
-        await page.goto("https://taming.io/", wait_until="domcontentloaded")
-        await page.wait_for_timeout(5000)
-        
-        # Try to safely click the CONTINUE button on the update popup
-        try:
-            continue_btn = page.locator("text=CONTINUE")
-            if await continue_btn.is_visible(timeout=3000):
-                await continue_btn.click()
-                await page.wait_for_timeout(2000)
-        except Exception as e:
-            print(f"Popup handling note: {e}")
+        await page.goto("https://taming.io/", wait_until="networkidle")
+        await page.wait_for_timeout(4000)
+
+        # 1. Click exact physical coordinates of "CONTINUE" button on 1280x720 canvas
+        await page.mouse.click(415, 560)
+        await page.wait_for_timeout(1000)
+
+        # 2. Click top-right 'X' close button of the update modal
+        await page.mouse.click(720, 275)
+        await page.wait_for_timeout(1000)
+
+        # 3. Click "NO" on the Subscribe prompt (bottom right)
+        await page.mouse.click(830, 775)
+        await page.wait_for_timeout(1000)
+
+        # 4. Fallback key press
+        await page.keyboard.press("Escape")
+        await page.wait_for_timeout(1000)
 
         screenshot_path = "leaderboard.png"
         await page.screenshot(path=screenshot_path, full_page=False)
