@@ -33,10 +33,13 @@ async def leaderboard(ctx, *, server_name: str = None):
         )
         page = await context.new_page()
         
-        # Block ad and tracking scripts so they never pop up and cover the screen
+        # Safe ad blocker that only blocks explicit ad networks
         await page.route(
             "**/*", 
-            lambda route: route.abort() if any(ad in route.request.url for ad in ["googlesyndication", "adservice", "doubleclick", "ads", "banner", "popunder"]) else route.continue_()
+            lambda route: route.abort() if any(ad in route.request.url for ad in [
+                "googlesyndication.com", "adservice.google.com", "doubleclick.net", 
+                "googletagmanager.com", "pagead", "adsbygoogle"
+            ]) else route.continue_()
         )
 
         await page.add_init_script("""
