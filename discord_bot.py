@@ -36,13 +36,17 @@ async def leaderboard(ctx, *, server_name: str = None):
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
         await page.wait_for_timeout(8000)
 
-        # 1. Click center of the screen to focus the WebGL canvas
+        # 1. Click center to focus canvas
         await page.mouse.click(640, 360)
         await page.wait_for_timeout(1000)
 
-        # 2. Click the center of the CONTINUE button
+        # 2. Click CONTINUE button
         await page.mouse.click(415, 575)
-        await page.wait_for_timeout(3000)
+        await page.wait_for_timeout(2000)
+
+        # 3. Click PLAY button (located around center-right on the spawn screen)
+        await page.mouse.click(415, 615)
+        await page.wait_for_timeout(4000)
 
         screenshot_path = "leaderboard.png"
         await page.screenshot(path=screenshot_path, full_page=False)
