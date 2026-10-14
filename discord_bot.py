@@ -29,24 +29,12 @@ async def leaderboard(ctx, *, server_name: str = None):
         page = await browser.new_page()
         await page.set_viewport_size({"width": 1280, "height": 720})
         
-        await page.goto("https://taming.io/", wait_until="networkidle")
-        await page.wait_for_timeout(4000)
+        await page.goto("https://taming.io/", wait_until="domcontentloaded")
+        await page.wait_for_timeout(5000)
 
-        # 1. Click exact physical coordinates of "CONTINUE" button on 1280x720 canvas
+        # Click exact physical coordinates of "CONTINUE" button
         await page.mouse.click(415, 560)
-        await page.wait_for_timeout(1000)
-
-        # 2. Click top-right 'X' close button of the update modal
-        await page.mouse.click(720, 275)
-        await page.wait_for_timeout(1000)
-
-        # 3. Click "NO" on the Subscribe prompt (bottom right)
-        await page.mouse.click(830, 775)
-        await page.wait_for_timeout(1000)
-
-        # 4. Fallback key press
-        await page.keyboard.press("Escape")
-        await page.wait_for_timeout(1000)
+        await page.wait_for_timeout(1500)
 
         screenshot_path = "leaderboard.png"
         await page.screenshot(path=screenshot_path, full_page=False)
