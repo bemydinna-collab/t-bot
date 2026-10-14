@@ -24,8 +24,6 @@ async def leaderboard(ctx, *, server_name: str = None):
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
-                "--no-zygote",
-                "--single-process",
                 "--disable-blink-features=AutomationControlled"
             ]
         )
@@ -40,13 +38,17 @@ async def leaderboard(ctx, *, server_name: str = None):
         await page.mouse.click(640, 360)
         await page.wait_for_timeout(1000)
 
-        # 2. Click CONTINUE button coordinates
+        # 2. Click CONTINUE button
         await page.mouse.click(415, 575)
         await page.wait_for_timeout(2000)
 
-        # 3. Press Enter key to trigger the Play button
+        # 3. Press Enter to hit PLAY and enter the match
         await page.keyboard.press("Enter")
-        await page.wait_for_timeout(4000)
+        await page.wait_for_timeout(6000)
+
+        # Double check: if still on spawn menu or reloaded, send Enter once more
+        await page.keyboard.press("Enter")
+        await page.wait_for_timeout(3000)
 
         screenshot_path = "leaderboard.png"
         await page.screenshot(path=screenshot_path, full_page=False)
