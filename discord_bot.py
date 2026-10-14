@@ -32,6 +32,10 @@ async def leaderboard(ctx, *, server_name: str = None):
         await page.set_viewport_size({"width": 1280, "height": 720})
         
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
+        await page.wait_for_timeout(7000)
+
+        # Click directly on the CONTINUE button coordinates (adjusted to center of green button)
+        await page.mouse.click(415, 585)
         await page.wait_for_timeout(3000)
 
         screenshot_path = "leaderboard.png"
