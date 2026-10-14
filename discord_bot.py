@@ -14,7 +14,7 @@ async def on_ready():
 
 @bot.command(name="leaderboard")
 async def leaderboard(ctx, *, server_name: str = None):
-    await ctx.send("Capturing leaderboard, please wait...")
+    await ctx.send("Fetching live in-game leaderboard data, please wait...")
     
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -25,8 +25,6 @@ async def leaderboard(ctx, *, server_name: str = None):
                 "--disable-dev-shm-usage",
                 "--enable-webgl",
                 "--use-gl=swiftshader",
-                "--enable-unsafe-swiftshader",
-                "--ignore-gpu-blocklist",
                 "--disable-blink-features=AutomationControlled"
             ]
         )
@@ -36,6 +34,7 @@ async def leaderboard(ctx, *, server_name: str = None):
         )
         page = await context.new_page()
         
+        # Block heavy ad networks
         await page.route(
             "**/*", 
             lambda route: route.abort() if any(ad in route.request.url for ad in [
@@ -61,23 +60,36 @@ async def leaderboard(ctx, *, server_name: str = None):
         await page.mouse.click(415, 575)
         await page.wait_for_timeout(2000)
 
-        # 3. Press Enter to hit PLAY
+        # 3. Press Enter to enter the live match
         await page.keyboard.press("Enter")
-        
-        # Take snapshot immediately without waiting 8 seconds to avoid memory exhaustion
-        await page.wait_for_timeout(2000)
+        await page.wait_for_timeout(6000)
 
-        screenshot_path = "leaderboard.png"
-        await page.screenshot(
-            path=screenshot_path,
-            type="jpeg",
-            quality=80,
-            clip={"x": 980, "y": 20, "width": 280, "height": 320}
-        )
-        
+        # 4. Extract leaderboard HTML elements or DOM text overlays directly from the active game page
+        leaderboard_data = await page.evaluate("""
+            () => {
+                // Look for leaderboard DOM elements or overlay text boxes in the game UI
+                const elements = document.querySelectorAll('.leaderboard-element, [class*="leaderboard"], [id*="leaderboard"]');
+                if (elements.length > 0) {
+                    return Array.from(elements).map(el => el.innerText).join('\\n');
+                }
+                // Fallback: grab all text within potential score overlay containers
+                const hud = document.querySelectorAll('div');
+                let results = [];
+                for (let div of hud) {
+                    if (div.innerText && div.innerText.includes('pts') || div.innerText.includes('score')) {
+                        results.push(div.innerText);
+                    }
+                }
+                return results.slice(0, 5).join('\\n---\\n') || "Could not parse live DOM leaderboard text.";
+            }
+        """)
+
         await browser.close()
         
-    await ctx.send(file=discord.File(screenshot_path))
+    if leaderboard_data and len(leaderboard_data.strip()) > 0:
+        await ctx.send(f"**Live In-Game Leaderboard:**\n```\n{leaderboard_data}\n```")
+    else:
+        await ctx.send("Joined match, but couldn't grab the DOM text elements cleanly.")
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 if not TOKEN:
