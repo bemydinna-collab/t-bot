@@ -24,7 +24,8 @@ async def leaderboard(ctx, *, server_name: str = None):
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
-                "--disable-blink-features=AutomationControlled"
+                "--disable-blink-features=AutomationControlled",
+                "--js-flags=--max-old-space-size=512"
             ]
         )
         context = await browser.new_context(
@@ -33,17 +34,14 @@ async def leaderboard(ctx, *, server_name: str = None):
         )
         page = await context.new_page()
         
-        # Built-in stealth script to bypass Cloudflare
         await page.add_init_script("""
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
-            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
             window.chrome = { runtime: {} };
         """)
 
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
         
-        # Wait for Cloudflare challenge frame to disappear if present
         try:
             await page.wait_for_selector("iframe[src*='cloudflare']", state="detached", timeout=12000)
         except Exception:
@@ -60,7 +58,13 @@ async def leaderboard(ctx, *, server_name: str = None):
         await page.wait_for_timeout(3000)
 
         screenshot_path = "leaderboard.png"
-        await page.screenshot(path=screenshot_path, full_page=False)
+        # Take screenshot as JPEG with disabled animations to avoid font-rasterization crash
+        await page.screenshot(
+            path=screenshot_path, 
+            type="jpeg", 
+            quality=80, 
+            animations="disabled"
+        )
         await browser.close()
         
     await ctx.send(file=discord.File(screenshot_path))
