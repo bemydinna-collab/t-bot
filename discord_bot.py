@@ -34,8 +34,20 @@ async def leaderboard(ctx, *, server_name: str = None):
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
         await page.wait_for_timeout(7000)
 
-        # Click directly on the CONTINUE button coordinates (adjusted to center of green button)
-        await page.mouse.click(415, 585)
+        # JavaScript click fallback to find and click the CONTINUE element directly
+        try:
+            await page.evaluate("""
+                () => {
+                    const elements = Array.from(document.querySelectorAll('*'));
+                    const continueEl = elements.find(el => el.textContent && el.textContent.trim() === 'CONTINUE');
+                    if (continueEl) {
+                        continueEl.click();
+                    }
+                }
+            """)
+        except Exception as e:
+            print(f"JS click note: {e}")
+
         await page.wait_for_timeout(3000)
 
         screenshot_path = "leaderboard.png"
