@@ -24,15 +24,34 @@ async def leaderboard(ctx, *, server_name: str = None):
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
-                "--disable-blink-features=AutomationControlled"
+                "--disable-blink-features=AutomationControlled",
+                "--no-first-run",
+                "--no-service-autorun"
             ]
         )
-        page = await browser.new_page()
-        await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-        
-        await page.set_viewport_size({"width": 1280, "height": 720})
+        # Create a browser context with a genuine desktop user-agent
+        context = await browser.new_context(
+            viewport={"width": 1280, "height": 720},
+            user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+        )
+        page = await context.new_page()
+
+        # Inject advanced anti-detection properties to bypass Cloudflare
+        await page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+            window.chrome = { runtime: {} };
+            const originalQuery = window.navigator.permissions.query;
+            window.navigator.permissions.query = (parameters) => (
+                parameters.name === 'notifications' ?
+                    Promise.resolve({ state: Notification.permission }) :
+                    originalQuery(parameters)
+            );
+        """)
+
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
-        await page.wait_for_timeout(8000)
+        await page.wait_for_timeout(9000)
 
         # 1. Click center to focus canvas
         await page.mouse.click(640, 360)
@@ -40,11 +59,7 @@ async def leaderboard(ctx, *, server_name: str = None):
 
         # 2. Click CONTINUE to dismiss update popup
         await page.mouse.click(415, 575)
-        await page.wait_for_timeout(2000)
-
-        # 3. Click the leaderboard/clipboard icon on the right side menu
-        await page.mouse.click(868, 395)
-        await page.wait_for_timeout(2000)
+        await page.wait_for_timeout(3000)
 
         screenshot_path = "leaderboard.png"
         await page.screenshot(path=screenshot_path, full_page=False)
