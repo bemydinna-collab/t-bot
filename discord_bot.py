@@ -23,7 +23,10 @@ async def leaderboard(ctx, *, server_name: str = None):
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
-                "--disable-gpu",
+                "--enable-webgl",
+                "--use-gl=swiftshader",
+                "--enable-unsafe-swiftshader",
+                "--ignore-gpu-blocklist",
                 "--disable-blink-features=AutomationControlled"
             ]
         )
@@ -33,7 +36,7 @@ async def leaderboard(ctx, *, server_name: str = None):
         )
         page = await context.new_page()
         
-        # Safe ad blocker that only blocks explicit ad networks
+        # Safe ad blocker for explicit ad networks
         await page.route(
             "**/*", 
             lambda route: route.abort() if any(ad in route.request.url for ad in [
