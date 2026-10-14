@@ -33,6 +33,12 @@ async def leaderboard(ctx, *, server_name: str = None):
         )
         page = await context.new_page()
         
+        # Block ad and tracking scripts so they never pop up and cover the screen
+        await page.route(
+            "**/*", 
+            lambda route: route.abort() if any(ad in route.request.url for ad in ["googlesyndication", "adservice", "doubleclick", "ads", "banner", "popunder"]) else route.continue_()
+        )
+
         await page.add_init_script("""
             Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
             Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
@@ -52,18 +58,16 @@ async def leaderboard(ctx, *, server_name: str = None):
 
         # 3. Press Enter to hit PLAY and enter the live match
         await page.keyboard.press("Enter")
-        
-        # Give it enough time to fully load into the live map and render the UI
         await page.wait_for_timeout(8000)
 
         screenshot_path = "leaderboard.png"
         
-        # Crop directly to the top right of the screen where the live leaderboard sits
+        # Crop cleanly to the top right leaderboard area
         await page.screenshot(
             path=screenshot_path,
             type="jpeg",
             quality=85,
-            clip={"x": 980, "y": 0, "width": 300, "height": 300}
+            clip={"x": 980, "y": 20, "width": 280, "height": 320}
         )
         
         await browser.close()
