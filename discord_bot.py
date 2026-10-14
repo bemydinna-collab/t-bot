@@ -2,7 +2,6 @@ import os
 import discord
 from discord.ext import commands
 from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -34,19 +33,23 @@ async def leaderboard(ctx, *, server_name: str = None):
         )
         page = await context.new_page()
         
-        # Apply full stealth overrides
-        await stealth_async(page)
+        # Built-in stealth script to bypass Cloudflare
+        await page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+            Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
+            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
+            window.chrome = { runtime: {} };
+        """)
 
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
         
-        # Wait up to 15s for Cloudflare Turnstile verification box to clear
+        # Wait for Cloudflare challenge frame to disappear if present
         try:
-            # If Cloudflare iframe exists, wait for it to detach/disappear
-            await page.wait_for_selector("iframe[src*='cloudflare']", state="detached", timeout=15000)
+            await page.wait_for_selector("iframe[src*='cloudflare']", state="detached", timeout=12000)
         except Exception:
-            print("Cloudflare check passed or timed out, continuing...")
+            pass
 
-        await page.wait_for_timeout(5000)
+        await page.wait_for_timeout(6000)
 
         # 1. Focus canvas
         await page.mouse.click(640, 360)
