@@ -25,30 +25,18 @@ async def leaderboard(ctx, *, server_name: str = None):
                 "--disable-dev-shm-usage",
                 "--disable-gpu",
                 "--no-zygote",
-                "--single-process"
+                "--single-process",
+                "--disable-blink-features=AutomationControlled"
             ]
         )
         page = await browser.new_page()
-        await page.set_viewport_size({"width": 1280, "height": 720})
         
+        # Mask navigator.webdriver
+        await page.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        
+        await page.set_viewport_size({"width": 1280, "height": 720})
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
-        await page.wait_for_timeout(7000)
-
-        # JavaScript click fallback to find and click the CONTINUE element directly
-        try:
-            await page.evaluate("""
-                () => {
-                    const elements = Array.from(document.querySelectorAll('*'));
-                    const continueEl = elements.find(el => el.textContent && el.textContent.trim() === 'CONTINUE');
-                    if (continueEl) {
-                        continueEl.click();
-                    }
-                }
-            """)
-        except Exception as e:
-            print(f"JS click note: {e}")
-
-        await page.wait_for_timeout(3000)
+        await page.wait_for_timeout(8000)
 
         screenshot_path = "leaderboard.png"
         await page.screenshot(path=screenshot_path, full_page=False)
