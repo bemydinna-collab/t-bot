@@ -14,7 +14,7 @@ async def on_ready():
 
 @bot.command(name="leaderboard")
 async def leaderboard(ctx, *, server_name: str = None):
-    await ctx.send("Fetching leaderboard data, please wait...")
+    await ctx.send("Fetching leaderboard, please wait...")
     
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -32,7 +32,7 @@ async def leaderboard(ctx, *, server_name: str = None):
         
         await page.set_viewport_size({"width": 1280, "height": 720})
         await page.goto("https://taming.io/", wait_until="domcontentloaded")
-        await page.wait_for_timeout(7000)
+        await page.wait_for_timeout(8000)
 
         # 1. Click center to focus canvas
         await page.mouse.click(640, 360)
@@ -40,24 +40,14 @@ async def leaderboard(ctx, *, server_name: str = None):
 
         # 2. Click CONTINUE to dismiss update popup
         await page.mouse.click(415, 575)
-        await page.wait_for_timeout(3000)
+        await page.wait_for_timeout(2000)
 
-        # 3. Extract leaderboard/server panel text directly from the DOM
-        leaderboard_text = await page.evaluate("""
-            () => {
-                // Look for elements containing server stats or player rankings
-                const panel = document.querySelector('canvas') || document.body;
-                // Gather visible text or query specific UI containers if present
-                return "Leaderboard / Server Status captured from main menu.";
-            }
-        """)
+        # 3. Click the leaderboard/clipboard icon on the right side menu
+        await page.mouse.click(868, 395)
+        await page.wait_for_timeout(2000)
 
         screenshot_path = "leaderboard.png"
-        # Take a cropped screenshot focused specifically on the top-left menu panel area
-        await page.screenshot(
-            path=screenshot_path,
-            clip={"x": 50, "y": 50, "width": 300, "height": 400}
-        )
+        await page.screenshot(path=screenshot_path, full_page=False)
         await browser.close()
         
     await ctx.send(file=discord.File(screenshot_path))
